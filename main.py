@@ -18,7 +18,7 @@ app.include_router(mandi.router)
 app.include_router(weather.router)
 app.include_router(recommendation_engine.router)
 app.include_router(schemes.router)
-app.include_router(question.router, prefix="/question", tags=["Question Answering"])
+app.include_router(question.router, prefix="/question", tags=["Expert Q&A"])
 
 @app.get("/")
 def root():
