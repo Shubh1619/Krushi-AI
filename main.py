@@ -12,11 +12,13 @@ from app.routers import recommendation_engine
 
 
 app = FastAPI(title="Crop Disease Detection via Groq")
+# app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(crop.router, prefix="/crop", tags=["Crop Diagnosis"])
 app.include_router(mandi.router)
 app.include_router(weather.router)
 app.include_router(recommendation_engine.router)
 app.include_router(schemes.router)
+app.include_router(question.router, prefix="/question", tags=["Question Answering"])
 
 @app.get("/")
 def root():
