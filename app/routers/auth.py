@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, BackgroundTasks, status
 from fastapi.responses import HTMLResponse
 from app.services import auth_service
-from schemas.user import User, LoginRequest, ForgotPasswordRequest
+from app.schemas.user import User, LoginRequest, ForgotPasswordRequest
 from app.services.auth_service import ResetPasswordPayload
 
 router = APIRouter()

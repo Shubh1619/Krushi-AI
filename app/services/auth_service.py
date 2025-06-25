@@ -16,7 +16,7 @@ from psycopg2 import errors as pg_errors
 load_dotenv()
 
 # Import your user schemas and auth logic
-from schemas.user import User, LoginRequest, ForgotPasswordRequest
+from app.schemas.user import User, LoginRequest, ForgotPasswordRequest
 from models.db import get_db_connection, create_users_table, DATABASE_URL
 from utils.auth_utils import hash_password, verify_password
 
