@@ -11,7 +11,7 @@ from app.routers import finance  # Added import
 
 
 app = FastAPI(title="Krushi AI")
-# app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(crop.router, prefix="/crop", tags=["Crop Diagnosis"])
 app.include_router(mandi.router)
 app.include_router(weather.router)
