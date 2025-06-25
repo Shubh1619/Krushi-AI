@@ -18,7 +18,7 @@ load_dotenv()
 # Import your user schemas and auth logic
 from app.schemas.user import User, LoginRequest, ForgotPasswordRequest
 from app.models.db import get_db_connection, create_users_table, DATABASE_URL
-from utils.auth_utils import hash_password, verify_password
+from app.utils.auth_utils import hash_password, verify_password
 
 # Setup logging
 logger = logging.getLogger("Vavastapak")
