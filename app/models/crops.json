@@ -1,0 +1,19 @@
+{
+  "cotton": [
+    {
+      "day": 0,
+      "task": "Sowing",
+      "tip": "Use hybrid cotton seeds"
+    },
+    {
+      "day": 20,
+      "task": "First Irrigation",
+      "tip": "Shallow watering required"
+    },
+    {
+      "day": 45,
+      "task": "Fertilizer Dose",
+      "tip": "Apply 60kg NPK/acre"
+    }
+  ]
+}
