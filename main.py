@@ -7,6 +7,7 @@ from app.routers import weather
 from app.routers import schemes
 from app.routers import recommendation_engine
 from app.routers import calendar
+from app.routers import finance  # Added import
 
 
 app = FastAPI(title="Krushi AI")
@@ -18,6 +19,7 @@ app.include_router(recommendation_engine.router)
 app.include_router(schemes.router)
 app.include_router(question.router, prefix="/question", tags=["Expert Q&A"])
 app.include_router(calendar.router)
+app.include_router(finance.router)  # Register finance router
 
 @app.get("/")
 def root():
