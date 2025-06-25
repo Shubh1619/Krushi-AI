@@ -3,9 +3,6 @@ from app.services.weather_service import get_full_weather, get_current_weather, 
 
 router = APIRouter(prefix="/weather", tags=["Weather"])
 
-@router.get("/current-json")
-def current_weather_json(city: str = Query(...)):
-    return get_full_weather(city)
 
 @router.get("/current")
 def current_weather(city: str = Query(...)):
