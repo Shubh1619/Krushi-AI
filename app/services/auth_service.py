@@ -17,7 +17,7 @@ load_dotenv()
 
 # Import your user schemas and auth logic
 from app.schemas.user import User, LoginRequest, ForgotPasswordRequest
-from models.db import get_db_connection, create_users_table, DATABASE_URL
+from app.models.db import get_db_connection, create_users_table, DATABASE_URL
 from utils.auth_utils import hash_password, verify_password
 
 # Setup logging
