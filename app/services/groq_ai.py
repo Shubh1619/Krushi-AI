@@ -2,11 +2,16 @@ from app.config import GEMINI_API_KEY
 import google.generativeai as genai
 
 genai.configure(api_key=GEMINI_API_KEY)
+<<<<<<< HEAD
+=======
+
+>>>>>>> edc268e024644afe98fef2763c8c5bd3483155c8
 model = genai.GenerativeModel("gemini-1.5-flash")
 
 def diagnose_crop_from_image(file_bytes: bytes, crop: str) -> str:
     try:
         prompt = f"""
+<<<<<<< HEAD
         तुम्ही एक अत्यंत अनुभवी आणि विश्वासार्ह कृषी डॉक्टर आहात.
         खालील माहिती मराठीत आणि मुद्देसूद स्वरूपात द्या:
 
@@ -19,10 +24,22 @@ def diagnose_crop_from_image(file_bytes: bytes, crop: str) -> str:
         कृपया खालील प्रतिमेवर आधारित निदान द्या.
         """
 
+=======
+        तुम्ही एक अनुभवी कृषी डॉक्टर आहात. खालील माहिती मराठीत आणि मुद्देसूद स्वरूपात द्या:
+        1. पिकाचे नाव: {crop}
+        2. रोगाचे नाव
+        3. रोग का होतो?
+        4. उपाय/उपचार
+        5. अतिरिक्त सूचना किंवा टीप
+        कृपया उत्तर व्यावसायिक कृषी तज्ज्ञासारखे द्या, बोटसारखे नाही.
+        खालील पानाच्या प्रतिमेवरून वरील माहिती द्या:
+        """
+>>>>>>> edc268e024644afe98fef2763c8c5bd3483155c8
         response = model.generate_content([
             prompt,
             {"mime_type": "image/jpeg", "data": file_bytes}
         ])
+<<<<<<< HEAD
 
         result_text = response.text
 
@@ -42,3 +59,8 @@ def diagnose_crop_from_image(file_bytes: bytes, crop: str) -> str:
 
     except Exception as e:
         return f"❌ त्रुटी: {str(e)}"
+=======
+        return response.text
+    except Exception as e:
+        return f"❌ त्रुटी: {str(e)}"
+>>>>>>> edc268e024644afe98fef2763c8c5bd3483155c8
