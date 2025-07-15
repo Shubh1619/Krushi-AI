@@ -4,8 +4,7 @@ class User(BaseModel):
     name: str
     email: EmailStr
     password: str
-    mobile: str
-    role: str  # Default role is 'user'
+    mobile: str  # Removed role field
 
 class LoginRequest(BaseModel):
     email: EmailStr

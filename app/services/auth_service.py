@@ -1,33 +1,31 @@
 import os
 import logging
 from datetime import datetime, timedelta
-from typing import Dict
-from fastapi import HTTPException, BackgroundTasks, status, Request
-from fastapi.responses import HTMLResponse
+from typing import Dict, Any
+
+from fastapi import HTTPException, BackgroundTasks, Request
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from fastapi.templating import Jinja2Templates
-from passlib.context import CryptContext
+from pydantic import BaseModel
 from secrets import token_urlsafe
 from dotenv import load_dotenv
 from psycopg2.extras import RealDictCursor
 from psycopg2 import errors as pg_errors
-
-# Load environment variables
-load_dotenv()
-
-# Import your user schemas and auth logic
-from app.schemas.user import User, LoginRequest, ForgotPasswordRequest
+from app.schemas.user import User
 from app.models.db import get_db_connection, create_users_table, DATABASE_URL
 from app.utils.auth_utils import hash_password, verify_password
 
-# Setup logging
-logger = logging.getLogger("Vavastapak")
+# Load environment variables
+load_dotenv(dotenv_path=".env")
+
+# ========== Logging ==========
+logger = logging.getLogger("KRISHI AI")
 logging.basicConfig(level=logging.INFO)
 
-# Ensure users table exists
+# ========== Ensure users table exists ==========
 create_users_table()
 
-# ---------- Mail Configuration ----------
+# ========== Email Configuration ==========
 conf = ConnectionConfig(
     MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
     MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
@@ -41,7 +39,15 @@ conf = ConnectionConfig(
     VALIDATE_CERTS=False,
 )
 
-# ---------- Email Function ----------
+
+# ========== Reset Token Store ==========
+reset_tokens: Dict[str, Dict[str, Any]] = {}
+
+# ========== Template Renderer ==========
+TEMPLATES_DIR = "templates"
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+# ========== Email Utility ==========
 async def send_email(subject: str, email_to: str, body: str, is_html: bool = False):
     message = MessageSchema(
         subject=subject,
@@ -49,15 +55,9 @@ async def send_email(subject: str, email_to: str, body: str, is_html: bool = Fal
         body=body,
         subtype="html" if is_html else "plain",
     )
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    await FastMail(conf).send_message(message)
 
-# ---------- Reset Token Storage ----------
-reset_tokens: Dict[str, Dict[str, any]] = {}
-
-# ---------- Password Reset Form Rendering ----------
-templates = Jinja2Templates(directory="templates")
-
+# ========== Reset Password Form Renderer ==========
 def show_reset_form(request: Request, token: str):
     for email, token_data in reset_tokens.items():
         if token_data["token"] == token:
@@ -67,14 +67,13 @@ def show_reset_form(request: Request, token: str):
             return templates.TemplateResponse("reset.html", {"request": request, "token": token})
     return templates.TemplateResponse("token_expired.html", {"request": request})
 
-# ---------- Reset Password Model ----------
-from pydantic import BaseModel
+# ========== Password Reset Schema ==========
 class ResetPasswordPayload(BaseModel):
     token: str
     new_password: str
     confirm_password: str
 
-# Utility to mask DB URL
+# ========== Mask DB URL ==========
 def mask_db_url(db_url: str) -> str:
     if not db_url or "@" not in db_url:
         return db_url
@@ -83,18 +82,18 @@ def mask_db_url(db_url: str) -> str:
         creds, rest = rest.split("@", 1)
         user = creds.split(":")[0]
         return f"{prefix}//{user}:*****@{rest}"
-    except:
+    except Exception:
         return db_url
 
-# ================== USER REGISTRATION ===================
+# ========== Registration ==========
 def register(user: User):
     hashed_password = hash_password(user.password)
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute(
-                    "INSERT INTO users (name, email, password, mobile, role) VALUES (%s, %s, %s, %s, %s)",
-                    (user.name, user.email, hashed_password, user.mobile, user.role)
+                    "INSERT INTO users (name, email, password, mobile) VALUES (%s, %s, %s, %s)",
+                    (user.name, user.email, hashed_password, user.mobile)
                 )
                 conn.commit()
         return {"message": "User registered successfully"}
@@ -107,11 +106,12 @@ def register(user: User):
         else:
             raise HTTPException(status_code=400, detail="User already exists")
     except Exception as e:
-        logger.error(f"PostgreSQL Error during registration: {e}")
+        logger.error(f"PostgreSQL error during registration: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-# ================== LOGIN ===================
-def login(login_request: LoginRequest):
+
+# ========== Login ==========
+def login(login_request):
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT * FROM users WHERE email=%s", (login_request.email,))
@@ -120,10 +120,10 @@ def login(login_request: LoginRequest):
     if user is None or not verify_password(login_request.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    return {"message": "Login successful", "name": user["name"], "role": user["role"]}
+    return {"message": "Login successful", "name": user["name"]}
 
-# ================== FORGOT PASSWORD ===================
-async def forgot_password(payload: ForgotPasswordRequest, background_tasks: BackgroundTasks):
+# ========== Forgot Password ==========
+async def forgot_password(payload, background_tasks: BackgroundTasks):
     with get_db_connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute("SELECT * FROM users WHERE email=%s", (payload.email,))
@@ -133,77 +133,57 @@ async def forgot_password(payload: ForgotPasswordRequest, background_tasks: Back
         raise HTTPException(status_code=404, detail="User not found")
 
     token = token_urlsafe(32)
-    expiry = datetime.utcnow() + timedelta(minutes=10)
-    reset_tokens[payload.email] = {"token": token, "expires": expiry}
+    reset_tokens[payload.email] = {
+        "token": token,
+        "expires": datetime.utcnow() + timedelta(minutes=10)
+    }
 
-    reset_link = f"https://auth-setup-3v60.onrender.com/reset-password?token={token}"
+    reset_link = f"https://krushi-ai.onrender.com/reset-password?token={token}"
+    subject = "🔐 तुमचा पासवर्ड रीसेट करा - Krushi AI"
 
-    subject = "Reset Your Password"
     body = f"""
-    Hello,\n\nClick the link below to reset your password (valid for 10 minutes):\n\n{reset_link}\n\nIf you did not request this, ignore this email.\n\n— Vavastapak Team
-    """
+प्रिय {user["name"]},
 
-    background_tasks.add_task(send_email, subject=subject, email_to=payload.email, body=body, is_html=False)
+आम्हाला तुमच्या Krushi AI खात्यासाठी पासवर्ड रीसेट करण्याची विनंती मिळाली आहे.
 
-    return {"message": f"Password reset link sent to {payload.email}."}
+👉 रीसेट लिंक: {reset_link}
 
-# ================== RESET PASSWORD ===================
+ही लिंक १० मिनिटांसाठी वैध आहे.
+
+जर तुम्ही ही विनंती केलेली नसेल, तर कृपया दुर्लक्ष करा.
+तुमचे खाते सुरक्षित आहे.
+
+शुभेच्छा,  
+Krushi AI टीम
+"""
+
+    background_tasks.add_task(send_email, subject=subject, email_to=payload.email, body=body)
+    return {"message": f"पासवर्ड रीसेट लिंक {payload.email} वर पाठवली आहे."}
+
+
+# ========== Reset Password ==========
 def reset_password(payload: ResetPasswordPayload):
-    user_email = None
-    for email, token_data in reset_tokens.items():
-        if token_data["token"] == payload.token:
-            if token_data["expires"] < datetime.utcnow():
-                reset_tokens.pop(email, None)
-                raise HTTPException(status_code=400, detail="Token has expired")
-            user_email = email
-            break
+    email = next((e for e, t in reset_tokens.items() if t["token"] == payload.token), None)
 
-    if not user_email:
+    if not email:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    token_data = reset_tokens[email]
+    if token_data["expires"] < datetime.utcnow():
+        reset_tokens.pop(email, None)
+        raise HTTPException(status_code=400, detail="Token has expired")
 
     if payload.new_password != payload.confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match")
 
     try:
-        hashed_password = hash_password(payload.new_password)
+        hashed = hash_password(payload.new_password)
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
-                cursor.execute("UPDATE users SET password=%s WHERE email=%s", (hashed_password, user_email))
+                cursor.execute("UPDATE users SET password=%s WHERE email=%s", (hashed, email))
                 conn.commit()
-        reset_tokens.pop(user_email, None)
+        reset_tokens.pop(email, None)
         return {"message": "✅ Password successfully reset. You can now log in."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating password: {str(e)}")
 
-# ================== TESTING ENDPOINTS ===================
-def get_all_users():
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute("SELECT id, name, email, mobile, role FROM users")
-                users = cursor.fetchall()
-        return {"users": users}
-    except Exception as e:
-        logger.error(f"DB error fetching users: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-def delete_all_users():
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("DELETE FROM users")
-                conn.commit()
-        return {"message": "All users deleted successfully"}
-    except Exception as e:
-        logger.error(f"DB error deleting users: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-def ping():
-    try:
-        with get_db_connection() as conn:
-            return {"status": "✅ Database connected", "db_url": mask_db_url(DATABASE_URL)}
-    except Exception as e:
-        return {"status": "❌ Failed to connect", "error": str(e)}
-
-# Print DB URL for debugging
-print("\U0001F50D DB URL used:", mask_db_url(DATABASE_URL))
