@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter
 from typing import Optional
 from app.services.mandi_service import (
     get_latest_prices,
-    get_price_history,
-    get_best_market
+    get_price_history
 )
 
 router = APIRouter(prefix="/mandi", tags=["Mandi Rates"])
@@ -16,6 +15,3 @@ def latest_prices(crop: str, state: Optional[str] = None):
 def price_history(crop: str, district: str, days: int = 15):
     return get_price_history(crop, district, days)
 
-@router.get("/best-market")
-def best_market(crop: str, lat: float, lon: float):
-    return get_best_market(crop, lat, lon)
