@@ -31,4 +31,3 @@ async def show_reset_form(request: Request, token: str):
 @router.post("/reset-password", status_code=status.HTTP_200_OK, summary="Reset password")
 async def reset_password(payload: ResetPasswordPayload):
     return auth_service.reset_password(payload)
-

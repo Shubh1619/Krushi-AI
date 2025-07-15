@@ -39,7 +39,6 @@ conf = ConnectionConfig(
     VALIDATE_CERTS=False,
 )
 
-
 # ========== Reset Token Store ==========
 reset_tokens: Dict[str, Dict[str, Any]] = {}
 
@@ -49,13 +48,17 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # ========== Email Utility ==========
 async def send_email(subject: str, email_to: str, body: str, is_html: bool = False):
-    message = MessageSchema(
-        subject=subject,
-        recipients=[email_to],
-        body=body,
-        subtype="html" if is_html else "plain",
-    )
-    await FastMail(conf).send_message(message)
+    try:
+        message = MessageSchema(
+            subject=subject,
+            recipients=[email_to],
+            body=body,
+            subtype="html" if is_html else "plain",
+        )
+        await FastMail(conf).send_message(message)
+        logger.info(f"Email sent to {email_to}")
+    except Exception as e:
+        logger.error(f"Failed to send email to {email_to}: {e}")
 
 # ========== Reset Password Form Renderer ==========
 def show_reset_form(request: Request, token: str):
@@ -109,7 +112,6 @@ def register(user: User):
         logger.error(f"PostgreSQL error during registration: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-
 # ========== Login ==========
 def login(login_request):
     with get_db_connection() as conn:
@@ -160,7 +162,6 @@ Krushi AI टीम
     background_tasks.add_task(send_email, subject=subject, email_to=payload.email, body=body)
     return {"message": f"पासवर्ड रीसेट लिंक {payload.email} वर पाठवली आहे."}
 
-
 # ========== Reset Password ==========
 def reset_password(payload: ResetPasswordPayload):
     email = next((e for e, t in reset_tokens.items() if t["token"] == payload.token), None)
@@ -186,4 +187,3 @@ def reset_password(payload: ResetPasswordPayload):
         return {"message": "✅ Password successfully reset. You can now log in."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating password: {str(e)}")
-
