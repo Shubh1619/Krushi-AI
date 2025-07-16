@@ -140,7 +140,7 @@ async def forgot_password(payload, background_tasks: BackgroundTasks):
         "expires": datetime.utcnow() + timedelta(minutes=10)
     }
 
-    reset_link = f"https://krushi-ai.onrender.com/reset-password?token={token}"
+    reset_link = f"https://krushi-ai.onrender.com/auth/auth/reset-password?token={token}"
     subject = "🔐 तुमचा पासवर्ड रीसेट करा - Krushi AI"
 
     body = f"""
