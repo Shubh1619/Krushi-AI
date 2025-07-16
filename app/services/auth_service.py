@@ -188,8 +188,14 @@ def reset_password(payload: ResetPasswordPayload):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating password: {str(e)}")
 
-def get_all_users():
+from app.models.db import get_db_connection
+from psycopg2.extras import RealDictCursor
+
+def get_all_users_except(current_user_id: int):
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT id, name, email, mobile FROM users")
+            cursor.execute("""
+                SELECT id, name FROM users 
+                WHERE id != %s
+            """, (current_user_id,))
             return cursor.fetchall()
