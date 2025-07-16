@@ -187,3 +187,9 @@ def reset_password(payload: ResetPasswordPayload):
         return {"message": "✅ Password successfully reset. You can now log in."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating password: {str(e)}")
+
+def get_all_users():
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("SELECT id, name, email, mobile FROM users")
+            return cursor.fetchall()

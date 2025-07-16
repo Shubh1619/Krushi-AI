@@ -25,3 +25,4 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     except UnknownHashError:
         # The hash is not a valid bcrypt hash
         return False
+
