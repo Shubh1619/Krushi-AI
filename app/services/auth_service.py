@@ -191,7 +191,7 @@ def reset_password(payload: ResetPasswordPayload):
 from app.models.db import get_db_connection
 from psycopg2.extras import RealDictCursor
 
-def get_all_users_except(current_user_id: int):
+def get_all_users(current_user_id: int):
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("""
