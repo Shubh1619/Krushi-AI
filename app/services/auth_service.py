@@ -2,7 +2,6 @@ import os
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any
-
 from fastapi import HTTPException, BackgroundTasks, Request
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from fastapi.templating import Jinja2Templates
@@ -14,6 +13,11 @@ from psycopg2 import errors as pg_errors
 from app.schemas.user import User
 from app.models.db import get_db_connection, create_users_table, DATABASE_URL
 from app.utils.auth_utils import hash_password, verify_password
+from jose import jwt
+
+SECRET_KEY = "lz9yTDyLDrDjK5jD3O3eYmErv4QehbJG_6kkU5R_GAk"
+ALGORITHM = "HS256"
+
 
 # Load environment variables
 load_dotenv(dotenv_path=".env")
@@ -113,6 +117,13 @@ def register(user: User):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 # ========== Login ==========
+
+def create_access_token(data: dict, expires_delta: timedelta = timedelta(hours=1)):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + expires_delta
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 def login(login_request):
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -122,7 +133,21 @@ def login(login_request):
     if user is None or not verify_password(login_request.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    return {"message": "Login successful", "name": user["name"]}
+    # ✅ Generate token with user ID & name
+    token = create_access_token({
+        "id": user["id"],
+        "name": user["name"]
+    })
+
+    # ✅ Get all users except the logged-in one
+    other_users = get_all_users(current_user_id=user["id"])
+
+    return {
+        "message": "Login successful",
+        "user_id": user["id"],
+        "name": user["name"],
+        "users": other_users
+    }
 
 # ========== Forgot Password ==========
 async def forgot_password(payload, background_tasks: BackgroundTasks):
@@ -187,9 +212,6 @@ def reset_password(payload: ResetPasswordPayload):
         return {"message": "✅ Password successfully reset. You can now log in."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating password: {str(e)}")
-
-from app.models.db import get_db_connection
-from psycopg2.extras import RealDictCursor
 
 def get_all_users(current_user_id: int):
     with get_db_connection() as conn:

@@ -32,6 +32,3 @@ async def show_reset_form(request: Request, token: str):
 async def reset_password(payload: ResetPasswordPayload):
     return auth_service.reset_password(payload)
 
-@router.get("/other-users/{current_user_id}", summary="Get all users except current user")
-def get_other_users(current_user_id: int):
-    return auth_service.get_all_users(current_user_id)
