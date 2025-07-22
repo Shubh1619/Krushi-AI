@@ -1,28 +1,35 @@
-# # app/services/chat_manager.py
+from typing import Dict
+from fastapi import WebSocket
+from sqlalchemy.orm import Session
+from app.models.db import create_messages_table
 
-# from typing import List
-# from fastapi import WebSocket
+class ChatManager:
+    def __init__(self):
+        # key = username, value = websocket connection
+        self.active_connections: Dict[str, WebSocket] = {}
 
-# class ConnectionManager:
-#     def __init__(self):
-#         self.active_connections: List[WebSocket] = []
-#         self.usernames = {}
+    async def connect(self, websocket: WebSocket, username: str):
+        await websocket.accept()
+        self.active_connections[username] = websocket
 
-#     async def connect(self, websocket: WebSocket, username: str):
-#         await websocket.accept()
-#         self.active_connections.append(websocket)
-#         self.usernames[websocket] = username
-#         await self.broadcast(f"🔵 {username} joined the chat.")
+    def disconnect(self, username: str):
+        self.active_connections.pop(username, None)
 
-#     def disconnect(self, websocket: WebSocket):
-#         username = self.usernames.get(websocket, "Unknown")
-#         if websocket in self.active_connections:
-#             self.active_connections.remove(websocket)
-#         if websocket in self.usernames:
-#             del self.usernames[websocket]
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
 
-#     async def broadcast(self, message: str):
-#         for connection in self.active_connections:
-#             await connection.send_text(message)
+    async def store_and_send(self, db: Session, sender: str, recipient: str, content: str):
+        # 1️⃣ Save message to DB
+        db_message = create_messages_table(sender=sender, recipient=recipient, content=content)
+        db.add(db_message)
+        db.commit()
 
-# manager = ConnectionManager()
+        # 2️⃣ Send to sender
+        sender_ws = self.active_connections.get(sender)
+        if sender_ws:
+            await sender_ws.send_text(f"👤 You: {content}")
+
+        # 3️⃣ Send to recipient
+        recipient_ws = self.active_connections.get(recipient)
+        if recipient_ws:
+            await recipient_ws.send_text(f"💬 {sender}: {content}")

@@ -1,32 +1,28 @@
-# # app/routers/chat.py
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from sqlalchemy.orm import Session
 
-# from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-# from app.services.chat_service import manager
-# from app.utils.token_utils import verify_token
+from app.services.chat_service import ChatManager
+from app.models.db import get_db_connection
 
-# router = APIRouter()
+router = APIRouter()
+chat_manager = ChatManager()
 
-# @router.websocket("/chat")
-# async def websocket_chat(websocket: WebSocket):
-#     token = websocket.query_params.get("token")
+# 🌐 WebSocket endpoint for real-time private chat
+@router.websocket("/ws/chat/{recipient}")
+async def websocket_endpoint(websocket: WebSocket, recipient: str):
+    username = websocket.query_params.get("username")
+    await chat_manager.connect(websocket, username)
 
-#     if not token:
-#         await websocket.close(code=1008)
-#         return
+    db: Session = next(get_db_connection())
 
-#     try:
-#         user_data = verify_token(token)
-#         username = user_data.get("name", "Anonymous")
-#     except Exception:
-#         await websocket.close(code=1008)
-#         return
+    try:
+        while True:
+            data = await websocket.receive_json()
+            sender = data.get("from")
+            message = data.get("message")
 
-#     await manager.connect(websocket, username)
+            # Save and forward message
+            await chat_manager.store_and_send(db, sender, recipient, message)
 
-#     try:
-#         while True:
-#             data = await websocket.receive_text()
-#             await manager.broadcast(f"{username}: {data}")
-#     except WebSocketDisconnect:
-#         manager.disconnect(websocket)
-#         await manager.broadcast(f"🔴 {username} left the chat.")
+    except WebSocketDisconnect:
+        chat_manager.disconnect(username)
