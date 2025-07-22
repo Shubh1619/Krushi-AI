@@ -18,18 +18,20 @@ class ChatManager:
     async def send_personal_message(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
 
-    async def store_and_send(self, db: Session, sender: str, recipient: str, content: str):
-        # 1️⃣ Save message to DB
-        db_message = create_messages_table(sender=sender, recipient=recipient, content=content)
-        db.add(db_message)
-        db.commit()
+    # ✅ services/chat_service.py
 
-        # 2️⃣ Send to sender
-        sender_ws = self.active_connections.get(sender)
-        if sender_ws:
-            await sender_ws.send_json(f"👤 You: {content}")
+async def store_and_send(self, db: Session, sender: str, recipient: str, content: str):
+    # Save to DB (assuming you’ve wired sender/recipient IDs correctly)
+    sender_ws = self.active_connections.get(sender)
+    recipient_ws = self.active_connections.get(recipient)
 
-        # 3️⃣ Send to recipient
-        recipient_ws = self.active_connections.get(recipient)
-        if recipient_ws:
-            await recipient_ws.send_text(f"💬 {sender}: {content}")
+    message_data = {
+        "from": sender,
+        "message": content
+    }
+
+    if sender_ws:
+        await sender_ws.send_json(message_data)
+
+    if recipient_ws:
+        await recipient_ws.send_json(message_data)
