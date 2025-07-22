@@ -27,7 +27,7 @@ class ChatManager:
         # 2️⃣ Send to sender
         sender_ws = self.active_connections.get(sender)
         if sender_ws:
-            await sender_ws.send_text(f"👤 You: {content}")
+            await sender_ws.send_json(f"👤 You: {content}")
 
         # 3️⃣ Send to recipient
         recipient_ws = self.active_connections.get(recipient)
