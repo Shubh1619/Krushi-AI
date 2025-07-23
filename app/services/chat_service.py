@@ -1,11 +1,9 @@
 from typing import Dict
 from fastapi import WebSocket
-from sqlalchemy.orm import Session
-from app.models.db import create_messages_table
+from app.models.db import save_message
 
 class ChatManager:
     def __init__(self):
-        # key = username, value = websocket connection
         self.active_connections: Dict[str, WebSocket] = {}
 
     async def connect(self, websocket: WebSocket, username: str):
@@ -15,23 +13,30 @@ class ChatManager:
     def disconnect(self, username: str):
         self.active_connections.pop(username, None)
 
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
+    async def get_user_id_by_username(self, db, username: str) -> int:
+        with db.cursor() as cur:
+            cur.execute("SELECT id FROM users WHERE name = %s", (username,))
+            result = cur.fetchone()
+            if result:
+                return result["id"]
+            else:
+                raise ValueError(f"User '{username}' not found")
 
-    # ✅ services/chat_service.py
+    async def store_and_send(self, db, sender: str, recipient: str, content: str):
+        sender_ws = self.active_connections.get(sender)
+        recipient_ws = self.active_connections.get(recipient)
 
-async def store_and_send(self, db: Session, sender: str, recipient: str, content: str):
-    # Save to DB (assuming you’ve wired sender/recipient IDs correctly)
-    sender_ws = self.active_connections.get(sender)
-    recipient_ws = self.active_connections.get(recipient)
+        sender_id = await self.get_user_id_by_username(db, sender)
+        receiver_id = await self.get_user_id_by_username(db, recipient)
 
-    message_data = {
-        "from": sender,
-        "message": content
-    }
+        save_message(sender_id, receiver_id, content)
 
-    if sender_ws:
-        await sender_ws.send_json(message_data)
+        message_data = {
+            "from": sender,
+            "message": content
+        }
 
-    if recipient_ws:
-        await recipient_ws.send_json(message_data)
+        if sender_ws:
+            await sender_ws.send_json(message_data)
+        if recipient_ws:
+            await recipient_ws.send_json(message_data)

@@ -2,19 +2,13 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
-from datetime import datetime
 
-# Load environment variables
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-
-# ========== DB Connection ==========
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
-
-# ========== Table Creation ==========
 def create_users_table():
     with get_db_connection() as conn:
         with conn.cursor() as cur:
@@ -28,7 +22,6 @@ def create_users_table():
                 );
             """)
             conn.commit()
-
 
 def create_messages_table():
     with get_db_connection() as conn:
@@ -44,8 +37,6 @@ def create_messages_table():
             """)
             conn.commit()
 
-
-# ========== Insert Message ==========
 def save_message(sender_id: int, receiver_id: int, content: str):
     with get_db_connection() as conn:
         with conn.cursor() as cur:
@@ -54,10 +45,3 @@ def save_message(sender_id: int, receiver_id: int, content: str):
                 VALUES (%s, %s, %s)
             """, (sender_id, receiver_id, content))
             conn.commit()
-
-
-# ========== Init ==========
-if __name__ == "__main__":
-    create_users_table()
-    create_messages_table()
-    print("✅ All tables initialized.")
