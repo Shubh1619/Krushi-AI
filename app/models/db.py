@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
+# print("DATABASE_URL:", DATABASE_URL)
 
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
@@ -37,11 +38,16 @@ def create_messages_table():
             """)
             conn.commit()
 
-def save_message(sender_id: int, receiver_id: int, content: str):
-    with get_db_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO messages (sender_id, receiver_id, content)
-                VALUES (%s, %s, %s)
-            """, (sender_id, receiver_id, content))
-            conn.commit()
+def save_message(sender_id: int, receiver_id: int, message: str):
+    db = get_db_connection()
+    with db.cursor() as cur:
+        cur.execute("""
+            INSERT INTO messages (sender_id, receiver_id, content)
+            VALUES (%s, %s, %s)
+        """, (sender_id, receiver_id, message))
+        db.commit()
+
+# ✅ Auto-create tables on app startup
+def init_db():
+    create_users_table()
+    create_messages_table()

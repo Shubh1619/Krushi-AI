@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  # ✅ CORS import
-
+from app.models import db
 from app.routers import crop
 from app.routers import mandi
 from app.routers import auth
@@ -34,3 +34,8 @@ app.include_router(question.router, prefix="/question", tags=["Expert Q&A"])
 app.include_router(calendar.router)
 app.include_router(finance.router)  
 app.include_router(chat.router) 
+
+
+@app.on_event("startup")
+def on_startup():
+    db.init_db()
