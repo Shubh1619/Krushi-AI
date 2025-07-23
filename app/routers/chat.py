@@ -5,33 +5,28 @@ from app.services.chat_service import ChatManager
 router = APIRouter()
 chat_manager = ChatManager()
 
-@router.websocket("/ws/chat/{recipient}")
-async def websocket_endpoint(websocket: WebSocket, recipient: str, db=Depends(get_db_connection)):
-    username = websocket.query_params.get("username")
+@router.websocket("/ws/chat/{recipient_id}")
+async def websocket_endpoint(websocket: WebSocket, recipient_id: str, db=Depends(get_db_connection)):
+    user_id = websocket.query_params.get("user_id")
 
-    if not username:
+    if not user_id:
         await websocket.close(code=1008)
         return
 
-    print(f"✅ User '{username}' connected to chat with recipient '{recipient}'")
+    print(f"✅ User '{user_id}' connected to chat with recipient '{recipient_id}'")
 
-    await chat_manager.connect(websocket, username, db)  # pass DB to get user_id
+    await chat_manager.connect(websocket, user_id)
 
     try:
         while True:
             data = await websocket.receive_json()
-            sender = data.get("from")  # This is still the username
-
             message = data.get("message")
 
-            print(f"📩 Message from {sender} to {recipient}: {message}")
+            print(f"📩 Message from {user_id} to {recipient_id}: {message}")
 
-            if sender and message:
-                await chat_manager.store_and_send(db, sender, recipient, message)
+            if message:
+                await chat_manager.store_and_send(db, user_id, recipient_id, message)
 
     except WebSocketDisconnect:
-        print(f"❌ User '{username}' disconnected")
-
-        # Use the same logic to fetch and disconnect by user_id
-        user_id = await chat_manager.get_user_id_by_name(db, username)
-        chat_manager.disconnect(str(user_id))
+        print(f"❌ User '{user_id}' disconnected")
+        chat_manager.disconnect(user_id)
