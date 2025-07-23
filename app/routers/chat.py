@@ -15,12 +15,13 @@ async def websocket_endpoint(websocket: WebSocket, recipient: str, db=Depends(ge
 
     print(f"✅ User '{username}' connected to chat with recipient '{recipient}'")
 
-    await chat_manager.connect(websocket, username)
+    await chat_manager.connect(websocket, username, db)  # pass DB to get user_id
 
     try:
         while True:
             data = await websocket.receive_json()
-            sender = data.get("from")
+            sender = data.get("from")  # This is still the username
+
             message = data.get("message")
 
             print(f"📩 Message from {sender} to {recipient}: {message}")
@@ -30,4 +31,7 @@ async def websocket_endpoint(websocket: WebSocket, recipient: str, db=Depends(ge
 
     except WebSocketDisconnect:
         print(f"❌ User '{username}' disconnected")
-        chat_manager.disconnect(username)
+
+        # Use the same logic to fetch and disconnect by user_id
+        user_id = await chat_manager.get_user_id_by_name(db, username)
+        chat_manager.disconnect(str(user_id))
