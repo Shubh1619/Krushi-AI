@@ -11,7 +11,7 @@ class ChatManager:
         self.active_connections[user_id] = websocket
 
     def disconnect(self, user_id: str):
-        self.active_connections.pop(user_id, None)
+        self.active_connections.pop(user_id)
 
     async def store_and_send(self, db, sender_id: str, recipient_id: str, content: str):
         save_message(int(sender_id), int(recipient_id), content)
