@@ -34,30 +34,49 @@ def create_messages_table():
                     sender_id INTEGER NOT NULL,
                     receiver_id INTEGER NOT NULL,
                     content TEXT NOT NULL,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    delivered BOOLEAN DEFAULT FALSE,
+                    seen BOOLEAN DEFAULT FALSE
                 );
             """)
             conn.commit()
 
-def save_message(sender_id: int, receiver_id: int, message: str):
-    db = get_db_connection()
-    with db.cursor() as cur:
+def save_message(sender_id: int, receiver_id: int, message: str) -> int:
+    conn = get_db_connection()
+    with conn.cursor() as cur:
         cur.execute("""
             INSERT INTO messages (sender_id, receiver_id, content)
-            VALUES (%s, %s, %s)
+            VALUES (%s, %s, %s) RETURNING id;
         """, (sender_id, receiver_id, message))
-        db.commit()
+        message_id = cur.fetchone()["id"]
+        conn.commit()
+    conn.close()
+    return message_id
+
+def mark_message_delivered(message_id: int):
+    conn = get_db_connection()
+    with conn.cursor() as cur:
+        cur.execute("UPDATE messages SET delivered = TRUE WHERE id = %s;", (message_id,))
+        conn.commit()
+    conn.close()
+
+def mark_message_seen(message_id: int):
+    conn = get_db_connection()
+    with conn.cursor() as cur:
+        cur.execute("UPDATE messages SET seen = TRUE WHERE id = %s;", (message_id,))
+        conn.commit()
+    conn.close()
 
 def get_chat_history(sender_id: int, receiver_id: int):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT sender_id, receiver_id, content, timestamp
+        SELECT id, sender_id, receiver_id, content, timestamp, delivered, seen
         FROM messages
         WHERE (sender_id = %s AND receiver_id = %s)
            OR (sender_id = %s AND receiver_id = %s)
-        ORDER BY timestamp
+        ORDER BY timestamp;
         """,
         (sender_id, receiver_id, receiver_id, sender_id)
     )
@@ -68,19 +87,26 @@ def get_chat_history(sender_id: int, receiver_id: int):
     messages = [
         {
             "from": str(r["sender_id"]),
-            "message": base64.b64encode(r["content"].encode()).decode()
+            "message": base64.b64encode(r["content"].encode()).decode(),
+            "status": (
+                "seen" if r["seen"] else
+                "delivered" if r["delivered"] else
+                "sent"
+            )
         }
         for r in rows
     ]
     return messages
+
 def delete_old_messages():
-    db = get_db_connection()
-    with db.cursor() as cur:
+    conn = get_db_connection()
+    with conn.cursor() as cur:
         cur.execute("""
             DELETE FROM messages
             WHERE timestamp < NOW() - INTERVAL '24 hours';
         """)
-        db.commit()
+        conn.commit()
+    conn.close()
 
 async def auto_delete_old_messages():
     while True:
