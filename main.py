@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  # ✅ CORS import
 from app.models import db
@@ -39,3 +40,4 @@ app.include_router(chat.router)
 @app.on_event("startup")
 def on_startup():
     db.init_db()
+    asyncio.create_task(db.auto_delete_old_messages())

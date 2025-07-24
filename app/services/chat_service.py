@@ -1,6 +1,6 @@
 from typing import Dict
 from fastapi import WebSocket
-from app.models.db import save_message
+from app.models.db import save_message  # Updated to pass db session
 
 class ChatManager:
     def __init__(self):
@@ -11,10 +11,11 @@ class ChatManager:
         self.active_connections[user_id] = websocket
 
     def disconnect(self, user_id: str):
-        self.active_connections.pop(user_id)
+        self.active_connections.pop(user_id, None)
 
     async def store_and_send(self, db, sender_id: str, recipient_id: str, content: str):
-        save_message(int(sender_id), int(recipient_id), content)
+        # Save message to DB
+        save_message(db, int(sender_id), int(recipient_id), content)
 
         message_data = {
             "from": sender_id,

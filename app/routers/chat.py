@@ -1,12 +1,15 @@
 from fastapi import APIRouter, WebSocket, Depends, WebSocketDisconnect
-from app.models.db import get_db_connection
+from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_
+from app.models.db import get_db_connection, Message  # assumes Message model exists
 from app.services.chat_service import ChatManager
 
 router = APIRouter()
 chat_manager = ChatManager()
 
+# ✅ WebSocket chat endpoint
 @router.websocket("/ws/chat/{recipient_id}")
-async def websocket_endpoint(websocket: WebSocket, recipient_id: str, db=Depends(get_db_connection)):
+async def websocket_endpoint(websocket: WebSocket, recipient_id: str, db: Session = Depends(get_db_connection)):
     user_id = websocket.query_params.get("user_id")
 
     if not user_id:
@@ -30,3 +33,22 @@ async def websocket_endpoint(websocket: WebSocket, recipient_id: str, db=Depends
     except WebSocketDisconnect:
         print(f"❌ User '{user_id}' disconnected")
         chat_manager.disconnect(user_id)
+
+# ✅ HTTP endpoint to fetch previous chat history
+@router.get("/chat/history/{user1_id}/{user2_id}")
+async def get_chat_history(user1_id: int, user2_id: int, db: Session = Depends(get_db_connection)):
+    messages = db.query(Message).filter(
+        or_(
+            and_(Message.sender_id == user1_id, Message.receiver_id == user2_id),
+            and_(Message.sender_id == user2_id, Message.receiver_id == user1_id)
+        )
+    ).order_by(Message.timestamp.asc()).all()
+
+    return [
+        {
+            "from": m.sender_id,
+            "to": m.receiver_id,
+            "message": m.content,
+            "timestamp": m.timestamp.isoformat()
+        } for m in messages
+    ]
