@@ -1,5 +1,6 @@
 import os
 import asyncio
+import base64
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
@@ -66,15 +67,12 @@ def get_chat_history(sender_id: int, receiver_id: int):
 
     messages = [
         {
-            "sender_id": r["sender_id"],
-            "receiver_id": r["receiver_id"],
-            "content": r["content"],
-            "timestamp": r["timestamp"].isoformat()
+            "from": str(r["sender_id"]),
+            "message": base64.b64encode(r["content"].encode()).decode()
         }
         for r in rows
     ]
     return messages
-
 def delete_old_messages():
     db = get_db_connection()
     with db.cursor() as cur:
