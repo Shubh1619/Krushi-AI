@@ -65,7 +65,12 @@ def get_chat_history(sender_id: int, receiver_id: int):
     conn.close()
 
     messages = [
-        {"sender_id": r[0], "receiver_id": r[1], "content": r[2], "timestamp": r[3].isoformat()}
+        {
+            "sender_id": r["sender_id"],
+            "receiver_id": r["receiver_id"],
+            "content": r["content"],
+            "timestamp": r["timestamp"].isoformat()
+        }
         for r in rows
     ]
     return messages
