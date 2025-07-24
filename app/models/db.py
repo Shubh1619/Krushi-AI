@@ -41,12 +41,24 @@ def create_messages_table():
             """)
             conn.commit()
 
+def upgrade_messages_table():
+    conn = get_db_connection()
+    with conn.cursor() as cur:
+        cur.execute("""
+            ALTER TABLE messages
+            ADD COLUMN IF NOT EXISTS delivered BOOLEAN DEFAULT FALSE,
+            ADD COLUMN IF NOT EXISTS seen BOOLEAN DEFAULT FALSE;
+        """)
+        conn.commit()
+    conn.close()
+
 def save_message(sender_id: int, receiver_id: int, message: str) -> int:
     conn = get_db_connection()
     with conn.cursor() as cur:
         cur.execute("""
             INSERT INTO messages (sender_id, receiver_id, content)
-            VALUES (%s, %s, %s) RETURNING id;
+            VALUES (%s, %s, %s)
+            RETURNING id;
         """, (sender_id, receiver_id, message))
         message_id = cur.fetchone()["id"]
         conn.commit()
@@ -89,9 +101,9 @@ def get_chat_history(sender_id: int, receiver_id: int):
             "from": str(r["sender_id"]),
             "message": base64.b64encode(r["content"].encode()).decode(),
             "status": (
-                "seen" if r["seen"] else
-                "delivered" if r["delivered"] else
-                "sent"
+                "seen" if r["seen"]
+                else "delivered" if r["delivered"]
+                else "sent"
             )
         }
         for r in rows
@@ -116,3 +128,4 @@ async def auto_delete_old_messages():
 def init_db():
     create_users_table()
     create_messages_table()
+    upgrade_messages_table()  # ✅ Apply new schema if needed
