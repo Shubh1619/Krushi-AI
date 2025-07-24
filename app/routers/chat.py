@@ -1,7 +1,8 @@
 from fastapi import APIRouter, WebSocket, Depends, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
-from app.models.db import get_db_connection,  save_message, get_chat_history  # assumes Message model exists
+from app.models.db import get_db_connection  # ✅ Use session, not raw connection
+from app.models.db import save_message  # ✅ Correct model
 from app.services.chat_service import ChatManager
 
 router = APIRouter()

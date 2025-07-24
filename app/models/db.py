@@ -47,18 +47,29 @@ def save_message(sender_id: int, receiver_id: int, message: str):
         """, (sender_id, receiver_id, message))
         db.commit()
 
-def get_chat_history(user1_id: int, user2_id: int):
-    db = get_db_connection()
-    with db.cursor() as cur:
-        cur.execute("""
-            SELECT sender_id, receiver_id, content, timestamp
-            FROM messages
-            WHERE (sender_id = %s AND receiver_id = %s)
-               OR (sender_id = %s AND receiver_id = %s)
-            ORDER BY timestamp ASC
-        """, (user1_id, user2_id, user2_id, user1_id))
-        messages = cur.fetchall()
+def get_chat_history(sender_id: int, receiver_id: int):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT sender_id, receiver_id, content, timestamp
+        FROM messages
+        WHERE (sender_id = %s AND receiver_id = %s)
+           OR (sender_id = %s AND receiver_id = %s)
+        ORDER BY timestamp
+        """,
+        (sender_id, receiver_id, receiver_id, sender_id)
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    messages = [
+        {"sender_id": r[0], "receiver_id": r[1], "content": r[2], "timestamp": r[3].isoformat()}
+        for r in rows
+    ]
     return messages
+
 
 # ✅ Delete messages older than 24 hours
 def delete_old_messages():
