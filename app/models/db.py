@@ -70,8 +70,6 @@ def get_chat_history(sender_id: int, receiver_id: int):
     ]
     return messages
 
-
-# ✅ Delete messages older than 24 hours
 def delete_old_messages():
     db = get_db_connection()
     with db.cursor() as cur:
@@ -81,13 +79,11 @@ def delete_old_messages():
         """)
         db.commit()
 
-# ✅ Background task to auto-delete every 1 hour
 async def auto_delete_old_messages():
     while True:
         delete_old_messages()
-        await asyncio.sleep(3600)  # Run hourly
+        await asyncio.sleep(3600)
 
-# ✅ Auto-create tables on app startup
 def init_db():
     create_users_table()
     create_messages_table()
