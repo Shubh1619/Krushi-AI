@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, Depends, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
-from app.models.db import get_db_connection, Message  # assumes Message model exists
+from app.models.db import get_db_connection,  save_message, get_chat_history  # assumes Message model exists
 from app.services.chat_service import ChatManager
 
 router = APIRouter()
@@ -37,12 +37,12 @@ async def websocket_endpoint(websocket: WebSocket, recipient_id: str, db: Sessio
 # ✅ HTTP endpoint to fetch previous chat history
 @router.get("/chat/history/{user1_id}/{user2_id}")
 async def get_chat_history(user1_id: int, user2_id: int, db: Session = Depends(get_db_connection)):
-    messages = db.query(Message).filter(
+    messages = db.query(save_message).filter(
         or_(
-            and_(Message.sender_id == user1_id, Message.receiver_id == user2_id),
-            and_(Message.sender_id == user2_id, Message.receiver_id == user1_id)
+            and_(save_message.sender_id == user1_id, save_message.receiver_id == user2_id),
+            and_(save_message.sender_id == user2_id, save_message.receiver_id == user1_id)
         )
-    ).order_by(Message.timestamp.asc()).all()
+    ).order_by(save_message.timestamp.asc()).all()
 
     return [
         {
