@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, BackgroundTasks, status
 from fastapi.responses import HTMLResponse
 from app.services import auth_service
 from app.schemas.user import User, LoginRequest, ForgotPasswordRequest
-from app.services.auth_service import ResetPasswordPayload
+from app.services.auth_service import ResetPasswordPayload , get_all_users , get_current_user_id ,Depends
 from typing import List
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -32,3 +32,9 @@ async def show_reset_form(request: Request, token: str):
 async def reset_password(payload: ResetPasswordPayload):
     return auth_service.reset_password(payload)
 
+
+# ------------------ Get all users except current -----------------
+
+@router.get("/users")
+def get_other_users(current_user_id: int = Depends(get_current_user_id)):
+    return get_all_users(current_user_id=current_user_id)
