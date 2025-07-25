@@ -3,14 +3,15 @@ from app.services.scheme_service import (
     get_all_schemes,
     get_scheme_by_id,
     get_recommended_schemes,
-    get_gemini_schemes
+    get_gemini_schemes,
+    get_all_states,
+    get_districts_by_state
 )
 
 router = APIRouter(
     prefix="/schemes",
     tags=["Government Schemes"]
 )
-
 
 @router.get("/gemini-recommend", summary="Gemini-Powered Scheme Advisor")
 def gemini_scheme_recommend(
@@ -22,18 +23,6 @@ def gemini_scheme_recommend(
     user_category: str = Query(..., description="Farmer category (e.g., General, SC, ST)"),
     user_needs: str = Query(..., description="Comma-separated needs (e.g., irrigation, storage)")
 ):
-    """
-    🎯 Get government scheme recommendations based on farmer profile 
-    using Google Gemini AI.
-
-    Returns schemes with:
-    - Name
-    - Type
-    - Description
-    - Eligibility
-    - How to apply
-    - Application portal
-    """
     return get_gemini_schemes(
         user_state,
         user_district,
@@ -43,3 +32,13 @@ def gemini_scheme_recommend(
         user_category,
         user_needs
     )
+
+# ✅ New route: Get all states
+@router.get("/states", summary="Get all Indian states")
+async def fetch_states():
+    return await get_all_states()
+
+# ✅ New route: Get districts by state ID
+@router.get("/districts", summary="Get districts by state ID")
+async def fetch_districts(state_id: int = Query(..., description="State ID from /states endpoint")):
+    return await get_districts_by_state(state_id)

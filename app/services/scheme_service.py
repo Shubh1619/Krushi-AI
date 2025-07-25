@@ -1,3 +1,5 @@
+import httpx
+
 import json
 import re
 from app.config import GEMINI_API_KEY
@@ -71,3 +73,15 @@ Response language: Marathi (lang: mr) only.
         return {"error": "Gemini response is not valid JSON"}
     except Exception as e:
         return {"error": str(e)}
+    
+async def get_all_states():
+    url = "https://cdn-api.co-vin.in/api/v2/admin/location/states"
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        return response.json()
+
+async def get_districts_by_state(state_id: int):
+    url = f"https://cdn-api.co-vin.in/api/v2/admin/location/districts/{state_id}"
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        return response.json()
