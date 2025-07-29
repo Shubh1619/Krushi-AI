@@ -77,19 +77,45 @@ Response language: Marathi (lang: mr) only.
 # ✅ Updated: Fetch states from CoWIN API with proper headers
 async def get_all_states():
     url = "https://cdn-api.co-vin.in/api/v2/admin/location/states"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/91.0.4472.124 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "en_US",
+        "Origin": "https://www.cowin.gov.in",
+        "Referer": "https://www.cowin.gov.in/"
+    }
+
     async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=COWIN_HEADERS)
+        response = await client.get(url, headers=headers)
         if response.status_code == 200:
             return response.json()
         else:
-            raise HTTPException(status_code=response.status_code, detail="Failed to fetch states")
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Failed to fetch states: {response.text}"
+            )
 
 # ✅ Updated: Fetch districts from CoWIN API with proper headers
 async def get_districts_by_state(state_id: int):
     url = f"https://cdn-api.co-vin.in/api/v2/admin/location/districts/{state_id}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/91.0.4472.124 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "en_US",
+        "Origin": "https://www.cowin.gov.in",
+        "Referer": "https://www.cowin.gov.in/"
+    }
+
     async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=COWIN_HEADERS)
+        response = await client.get(url, headers=headers)
         if response.status_code == 200:
             return response.json()
         else:
-            raise HTTPException(status_code=response.status_code, detail="Failed to fetch districts")
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Failed to fetch districts: {response.text}"
+            )
