@@ -1,0 +1,14 @@
+[
+  {
+    "crop": "cotton",
+    "date": "2025-07-15",
+    "task": "First Irrigation",
+    "tip": "Shallow watering required"
+  },
+  {
+    "crop": "cotton",
+    "date": "2025-08-09",
+    "task": "Fertilizer Dose",
+    "tip": "Apply 60kg NPK/acre"
+  }
+]
